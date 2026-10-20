@@ -29,7 +29,7 @@ export default function AdminConfiguracoes() {
       setStage(data.stage_id?.toString() ?? "");
       setWhatsapp(data.whatsapp_clinica ?? "");
       setMensagem(data.whatsapp_mensagem ?? "");
-      setNomePlataforma(data.nome_plataforma ?? "Clínica Vasques");
+      setNomePlataforma(data.nome_plataforma ?? "Programa de Indicação");
       setLogoUrl(data.logo_url ?? "");
     }
   }, [data]);

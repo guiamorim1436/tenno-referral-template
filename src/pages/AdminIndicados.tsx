@@ -91,7 +91,7 @@ export default function AdminIndicados() {
                 <td className="p-3 text-muted-foreground">
                   {i.kommo_lead_id ? (
                     <a
-                      href={`https://${config?.subdomain || "clinica-vasques"}.kommo.com/leads/detail/${i.kommo_lead_id}`}
+                      href={`https://${config?.subdomain || "crm"}.kommo.com/leads/detail/${i.kommo_lead_id}`}
                       target="_blank"
                       rel="noreferrer"
                       className="text-primary hover:underline flex items-center gap-1"

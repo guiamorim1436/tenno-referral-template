@@ -14,7 +14,7 @@ export default function PainelToken() {
     queryFn: () => getPainel({ token }),
   });
   const { data: config } = useQuery({ queryKey: ["public-config"], queryFn: getPublicConfig });
-  const nomePlataforma = config?.nome_plataforma || "Clínica Vasques";
+  const nomePlataforma = config?.nome_plataforma || "Programa de Indicação";
 
   useEffect(() => {
     document.title = `${nomePlataforma} · programa de indicação`;

@@ -5,11 +5,14 @@ import { PageShell } from "@/components/PageShell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { getIndicadorPorCodigo, submitIndicacao } from "@/lib/api";
+import { useQuery } from "@tanstack/react-query";
+import { getIndicadorPorCodigo, getPublicConfig, submitIndicacao } from "@/lib/api";
 
 export default function RCodigo() {
   const { codigo = "" } = useParams();
   const navigate = useNavigate();
+  const { data: config } = useQuery({ queryKey: ["public-config"], queryFn: getPublicConfig });
+  const nomePlataforma = config?.nome_plataforma || "nossa clínica";
 
   const [indicador, setIndicador] = useState<{ nome: string } | null>(null);
   const [carregando, setCarregando] = useState(true);
@@ -60,7 +63,7 @@ export default function RCodigo() {
   return (
     <PageShell max="sm">
       <h1 className="text-3xl text-primary italic">
-        {indicador.nome.split(" ")[0]} recomendou a Clínica Vasques para você
+        {indicador.nome.split(" ")[0]} recomendou {nomePlataforma} para você
       </h1>
 
       <p className="text-muted-foreground mt-3">
