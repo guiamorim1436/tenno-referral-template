@@ -64,10 +64,11 @@ export default function AdminIndicadores() {
           <thead className="text-left text-muted-foreground border-b bg-muted/50">
             <tr>
               <th className="p-4 font-medium">Nome / Contato</th>
+              <th className="p-4 font-medium text-center">Data Entrada</th>
               <th className="p-4 font-medium text-center">Cliques no Link</th>
               <th className="p-4 font-medium text-center">Pontos Convertidos</th>
-              <th className="p-4 font-medium text-center">Pontos Consumidos</th>
               <th className="p-4 font-medium text-center">Saldo</th>
+              <th className="p-4 font-medium text-center">Pontos Consumidos</th>
               <th className="p-4 font-medium">Link / Ação</th>
             </tr>
           </thead>
@@ -81,6 +82,9 @@ export default function AdminIndicadores() {
                     <div className="font-medium text-foreground">{i.nome}</div>
                     <div className="text-xs text-muted-foreground">{formatPhoneBR(i.telefone)}</div>
                   </td>
+                  <td className="p-4 text-center text-xs text-muted-foreground">
+                    {i.created_at ? new Date(i.created_at).toLocaleDateString("pt-BR") : "-"}
+                  </td>
                   <td className="p-4 text-center">
                     <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200/60">
                       {cliques} cliques
@@ -89,13 +93,13 @@ export default function AdminIndicadores() {
                   <td className="p-4 text-center font-medium text-muted-foreground">
                     {i.convertidos || 0}
                   </td>
-                  <td className="p-4 text-center text-muted-foreground">
-                    {i.pontos_consumidos || 0}
-                  </td>
                   <td className="p-4 text-center">
                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${saldo > 0 ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-700'}`}>
                       {saldo} pt
                     </span>
+                  </td>
+                  <td className="p-4 text-center text-muted-foreground">
+                    {i.pontos_consumidos || 0}
                   </td>
                   <td className="p-4">
                     <div className="flex items-center gap-2">
@@ -128,7 +132,7 @@ export default function AdminIndicadores() {
                               setPontos("1");
                               setComentario("");
                             }}
-                            className="h-7 text-xs gap-1.5 ml-2"
+                            className="h-7 text-xs gap-1.5 ml-2 rounded-full px-3"
                           >
                             <Gift className="w-3.5 h-3.5" />
                             Premiar

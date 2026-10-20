@@ -6,7 +6,7 @@ export function PageShell({ children, max = "md" }: { children: ReactNode; max?:
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b border-border/60">
-        <div className={`mx-auto ${maxClass} px-5 py-5 flex items-center justify-between`}>
+        <div className={`mx-auto ${maxClass} px-5 py-5 flex items-center justify-center`}>
           <Logo />
         </div>
       </header>

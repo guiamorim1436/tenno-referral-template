@@ -25,8 +25,8 @@ export default function Index() {
 
         </p>
         <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
-          <Button asChild size="lg"><Link to="/indicar">Quero indicar</Link></Button>
-          <Button asChild size="lg" variant="ghost"><Link to="/entrar">Já indico — acessar painel</Link></Button>
+          <Button asChild size="lg" className="rounded-full px-8 shadow-sm"><Link to="/indicar">Quero indicar</Link></Button>
+          <Button asChild size="lg" variant="outline" className="rounded-full px-8 border-border/80"><Link to="/entrar">Acessar meu painel</Link></Button>
         </div>
       </section>
 

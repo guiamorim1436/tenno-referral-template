@@ -47,10 +47,12 @@ export default function AdminIndicados() {
       )}
       <div className="flex items-center justify-between">
         <h1 className="text-3xl text-primary">Indicados</h1>
-        <Button variant="outline" size="sm" onClick={sync} disabled={syncing} className="gap-2">
-          <RefreshCw className={`w-4 h-4 ${syncing ? "animate-spin" : ""}`} />
-          Sincronizar Kommo
-        </Button>
+        {config?.subdomain && (
+          <Button variant="outline" size="sm" onClick={sync} disabled={syncing} className="gap-2 rounded-full">
+            <RefreshCw className={`w-4 h-4 ${syncing ? "animate-spin" : ""}`} />
+            Sincronizar Kommo
+          </Button>
+        )}
       </div>
       <div className="rounded-2xl border border-border/60 bg-card overflow-x-auto">
         <table className="w-full text-sm">
@@ -59,10 +61,10 @@ export default function AdminIndicados() {
               <th className="p-3">Nome</th>
               <th className="p-3">Telefone</th>
               <th className="p-3">Indicador</th>
-              <th className="p-3">Status Local</th>
-              <th className="p-3">Etapa Kommo</th>
               <th className="p-3">Data</th>
-              <th className="p-3">Link Kommo</th>
+              <th className="p-3">Status</th>
+              {config?.subdomain && <th className="p-3">Etapa Kommo</th>}
+              {config?.subdomain && <th className="p-3">Link Kommo</th>}
             </tr>
           </thead>
           <tbody className="divide-y">
@@ -71,35 +73,39 @@ export default function AdminIndicados() {
                 <td className="p-3">{i.nome_indicado}</td>
                 <td className="p-3">{formatPhoneBR(i.telefone_indicado)}</td>
                 <td className="p-3">{i.indicador?.nome ?? "-"}</td>
+                <td className="p-3 text-muted-foreground text-xs">{new Date(i.created_at).toLocaleDateString("pt-BR")}</td>
                 <td className="p-3">
                   <select
                     value={i.status}
                     onChange={(e) => change(i.id, e.target.value as any)}
-                    className="rounded-md border border-input bg-background px-2 py-1 text-sm"
+                    className="rounded-full border border-input bg-background px-3 py-1 text-xs"
                   >
                     {STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
                   </select>
                 </td>
-                <td className="p-3">
-                  {i.kommo_status ? (
-                    <span className="inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800">
-                      {i.kommo_status}
-                    </span>
-                  ) : "-"}
-                </td>
-                <td className="p-3 text-muted-foreground">{new Date(i.created_at).toLocaleDateString("pt-BR")}</td>
-                <td className="p-3 text-muted-foreground">
-                  {i.kommo_lead_id ? (
-                    <a
-                      href={`https://${config?.subdomain || "crm"}.kommo.com/leads/detail/${i.kommo_lead_id}`}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="text-primary hover:underline flex items-center gap-1"
-                    >
-                      Ver Lead <ExternalLink className="w-3 h-3" />
-                    </a>
-                  ) : "-"}
-                </td>
+                {config?.subdomain && (
+                  <td className="p-3">
+                    {i.kommo_status ? (
+                      <span className="inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800">
+                        {i.kommo_status}
+                      </span>
+                    ) : "-"}
+                  </td>
+                )}
+                {config?.subdomain && (
+                  <td className="p-3 text-muted-foreground">
+                    {i.kommo_lead_id ? (
+                      <a
+                        href={`https://${config?.subdomain || "crm"}.kommo.com/leads/detail/${i.kommo_lead_id}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-primary hover:underline flex items-center gap-1 text-xs"
+                      >
+                        Ver Lead <ExternalLink className="w-3 h-3" />
+                      </a>
+                    ) : "-"}
+                  </td>
+                )}
               </tr>
             ))}
           </tbody>
