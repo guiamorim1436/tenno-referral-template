@@ -7,6 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useQuery } from "@tanstack/react-query";
 import { getIndicadorPorCodigo, getPublicConfig, submitIndicacao } from "@/lib/api";
+import { normalizePhone } from "@/lib/phone";
+import { PhoneInputInternational } from "@/components/PhoneInputInternational";
 
 export default function RCodigo() {
   const { codigo = "" } = useParams();
@@ -20,6 +22,7 @@ export default function RCodigo() {
 
   const [nome, setNome] = useState("");
   const [tel, setTel] = useState("");
+  const [countryDial, setCountryDial] = useState("55");
   const [enviando, setEnviando] = useState(false);
 
   useEffect(() => {
@@ -37,7 +40,12 @@ export default function RCodigo() {
     e.preventDefault();
     setEnviando(true);
     try {
-      const res = await submitIndicacao({ codigo, nome, telefone: tel });
+      const fullPhone = normalizePhone(tel, countryDial);
+      if (!fullPhone) {
+        throw new Error("Por favor, insira um número de telefone válido.");
+      }
+
+      const res = await submitIndicacao({ codigo, nome, telefone: fullPhone });
       if (res.whatsappUrl) {
         window.location.href = res.whatsappUrl;
       } else {
@@ -75,11 +83,19 @@ export default function RCodigo() {
           <Input id="nome" value={nome} onChange={(e) => setNome(e.target.value)} required minLength={2} maxLength={120} />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="tel">WhatsApp</Label>
-          <Input id="tel" inputMode="tel" placeholder="(11) 90000-0000" value={tel} onChange={(e) => setTel(e.target.value)} required />
+          <Label htmlFor="tel">WhatsApp / Telefone</Label>
+          <PhoneInputInternational
+            id="tel"
+            value={tel}
+            onChange={setTel}
+            countryDial={countryDial}
+            onCountryDialChange={setCountryDial}
+            required
+            disabled={enviando}
+          />
         </div>
         <Button type="submit" className="w-full" size="lg" disabled={enviando}>
-          {enviando ? "Enviando..." : "Quero saber mais"}
+          {enviando ? "Enviando..." : "Quero ser atendido"}
         </Button>
       </form>
     </PageShell>

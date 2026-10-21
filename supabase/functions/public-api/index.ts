@@ -1,34 +1,29 @@
-// Edge function: public-api
-// Handles all public (no-auth) operations for the indication app.
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, accept-profile, content-profile",
 };
 
-const ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-function generateCodigo(length = 6) {
-  const bytes = new Uint8Array(length);
-  crypto.getRandomValues(bytes);
-  let out = "";
-  for (let i = 0; i < length; i++) out += ALPHABET[bytes[i] % ALPHABET.length];
-  return out;
+function generateCodigo(len = 6) {
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  let r = "";
+  for (let i = 0; i < len; i++) r += chars.charAt(Math.floor(Math.random() * chars.length));
+  return r;
 }
+
 function generateMagicToken() {
   const bytes = new Uint8Array(24);
   crypto.getRandomValues(bytes);
   return Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
 }
 
-function normalizePhoneBR(raw: string): string | null {
+function normalizePhoneIntl(raw: string): string | null {
   const digits = (raw || "").replace(/\D/g, "");
-  if (digits.length < 10 || digits.length > 13) return null;
-  let d = digits;
-  if (d.length === 13 && d.startsWith("55")) d = d.slice(2);
-  if (d.length === 12 && d.startsWith("55")) d = d.slice(2);
-  if (d.length === 10 || d.length === 11) return d;
-  return null;
+  // Número internacional aceitável: entre 8 e 15 dígitos
+  if (digits.length < 8 || digits.length > 15) return null;
+  return digits;
 }
 
 // ---- Kommo helpers ----
@@ -44,32 +39,54 @@ async function findContactByPhone(c: KommoConfig, phone: string) {
   if (res.status === 204) return null;
   if (!res.ok) throw new Error(`Kommo find ${res.status}`);
   const data = await res.json();
-  return data?._embedded?.contacts?.[0]?.id ?? null;
-}
-async function createContact(c: KommoConfig, args: { nome: string; telefone: string }) {
-  const body = [{ name: args.nome, custom_fields_values: [{ field_code: "PHONE", values: [{ value: args.telefone, enum_code: "WORK" }] }] }];
-  const res = await fetch(`${kommoUrl(c)}/contacts`, { method: "POST", headers: kommoHeaders(c), body: JSON.stringify(body) });
-  if (!res.ok) throw new Error(`Kommo create contact ${res.status}`);
-  const data = await res.json();
-  return data._embedded.contacts[0].id;
-}
-async function createLead(c: KommoConfig, args: { nome: string; contactId: number; tags?: string[] }) {
-  const embedded: any = { contacts: [{ id: args.contactId }] };
-  if (args.tags?.length) embedded.tags = args.tags.map((name) => ({ name }));
-  const lead: any = { name: `Indicação - ${args.nome}`, _embedded: embedded };
-  if (c.pipeline_id) lead.pipeline_id = c.pipeline_id;
-  if (c.stage_id) lead.status_id = c.stage_id;
-  const res = await fetch(`${kommoUrl(c)}/leads`, { method: "POST", headers: kommoHeaders(c), body: JSON.stringify([lead]) });
-  if (!res.ok) throw new Error(`Kommo create lead ${res.status}`);
-  const data = await res.json();
-  return data._embedded.leads[0].id;
-}
-async function addLeadNote(c: KommoConfig, leadId: number, text: string) {
-  const body = [{ note_type: "common", params: { text } }];
-  await fetch(`${kommoUrl(c)}/leads/${leadId}/notes`, { method: "POST", headers: kommoHeaders(c), body: JSON.stringify(body) });
+  const contacts = data?._embedded?.contacts ?? [];
+  return contacts[0]?.id ?? null;
 }
 
-// ---- Handlers ----
+async function createContact(c: KommoConfig, contact: { nome: string; telefone: string }) {
+  const body = [{
+    name: contact.nome,
+    custom_fields_values: [{ field_code: "PHONE", values: [{ value: contact.telefone, enum_code: "WORK" }] }],
+  }];
+  const res = await fetch(`${kommoUrl(c)}/contacts`, {
+    method: "POST",
+    headers: kommoHeaders(c),
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw new Error(`Kommo contact ${res.status}`);
+  const data = await res.json();
+  return data?._embedded?.contacts?.[0]?.id ?? null;
+}
+
+async function createLead(c: KommoConfig, lead: { nome: string; contactId?: number | null; tags?: string[] }) {
+  const item: any = {
+    name: `Indicação: ${lead.nome}`,
+    status_id: lead.tags ? undefined : c.stage_id,
+    pipeline_id: c.pipeline_id,
+  };
+  if (c.pipeline_id) item.pipeline_id = c.pipeline_id;
+  if (c.stage_id) item.status_id = c.stage_id;
+  if (lead.contactId) item._embedded = { contacts: [{ id: lead.contactId }] };
+  if (lead.tags?.length) item._embedded = { ...(item._embedded ?? {}), tags: lead.tags.map((t) => ({ name: t })) };
+  const res = await fetch(`${kommoUrl(c)}/leads`, {
+    method: "POST",
+    headers: kommoHeaders(c),
+    body: JSON.stringify([item]),
+  });
+  if (!res.ok) throw new Error(`Kommo lead ${res.status}`);
+  const data = await res.json();
+  return data?._embedded?.leads?.[0]?.id ?? null;
+}
+
+async function addLeadNote(c: KommoConfig, leadId: number, text: string) {
+  await fetch(`${kommoUrl(c)}/leads/${leadId}/notes`, {
+    method: "POST",
+    headers: kommoHeaders(c),
+    body: JSON.stringify([{ note_type: "common", params: { text } }]),
+  });
+}
+
+// ---- Dispatcher ----
 async function handle(action: string, payload: any, admin: any) {
   switch (action) {
     case "getPublicConfig": {
@@ -82,9 +99,9 @@ async function handle(action: string, payload: any, admin: any) {
     }
     case "cadastrarIndicador": {
       const nome = String(payload.nome || "").trim();
-      const telefone = normalizePhoneBR(payload.telefone || "");
+      const telefone = normalizePhoneIntl(payload.telefone || "");
       if (nome.length < 2) throw new Error("Nome inválido.");
-      if (!telefone) throw new Error("Telefone inválido. Use DDD + número.");
+      if (!telefone) throw new Error("Telefone inválido.");
 
       const { data: existing } = await admin
         .from("indicadores")
@@ -113,7 +130,7 @@ async function handle(action: string, payload: any, admin: any) {
       return { magic_token: magic, codigo: created.codigo_indicacao, novo: true };
     }
     case "entrarPorTelefone": {
-      const telefone = normalizePhoneBR(payload.telefone || "");
+      const telefone = normalizePhoneIntl(payload.telefone || "");
       if (!telefone) throw new Error("Telefone inválido.");
       const { data: ind } = await admin
         .from("indicadores").select("id").eq("telefone", telefone).maybeSingle();
@@ -149,7 +166,7 @@ async function handle(action: string, payload: any, admin: any) {
     }
     case "submitIndicacao": {
       const nome = String(payload.nome || "").trim();
-      const telefone = normalizePhoneBR(payload.telefone || "");
+      const telefone = normalizePhoneIntl(payload.telefone || "");
       const codigo = String(payload.codigo || "").toUpperCase();
       if (nome.length < 2) throw new Error("Nome inválido.");
       if (!telefone) throw new Error("Telefone inválido.");
@@ -216,18 +233,22 @@ async function handle(action: string, payload: any, admin: any) {
   }
 }
 
-Deno.serve(async (req) => {
+serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   try {
     const { action, payload, schema } = await req.json();
+
+    // Data client — uses tenant schema if provided
     const dbSchema = schema && schema !== "public" ? schema : undefined;
     const clientOpts: any = {};
     if (dbSchema) clientOpts.db = { schema: dbSchema };
+    const serviceKey = Deno.env.get("SERVICE_ROLE_KEY") ?? Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const admin = createClient(
       Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+      serviceKey,
       clientOpts,
     );
+
     const result = await handle(action, payload ?? {}, admin);
     return new Response(JSON.stringify(result), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
