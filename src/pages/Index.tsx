@@ -1,7 +1,6 @@
 import { Link } from "react-router-dom";
 import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Settings } from "lucide-react";
 import { PageShell } from "@/components/PageShell";
 import { Button } from "@/components/ui/button";
 import { getPublicConfig } from "@/lib/api";
@@ -42,14 +41,6 @@ export default function Index() {
           </div>
         ))}
       </section>
-
-      <footer className="mt-20 pt-8 border-t border-border/40 text-center pb-8">
-        <Button asChild variant="ghost" size="sm" className="text-muted-foreground/50 hover:text-primary transition-colors">
-          <Link to="/login" className="flex items-center gap-2">
-            <Settings className="w-4 h-4" /> Administração
-          </Link>
-        </Button>
-      </footer>
     </PageShell>
   );
 }

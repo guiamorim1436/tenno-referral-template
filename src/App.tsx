@@ -24,7 +24,7 @@ export default function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Index />} />
-          <Route path="/login" element={<Login />} />
+          <Route path="/admin/login" element={<Login />} />
           <Route path="/entrar" element={<Entrar />} />
           <Route path="/indicar" element={<Indicar />} />
           <Route path="/painel/:token" element={<PainelToken />} />

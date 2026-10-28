@@ -7,7 +7,7 @@ export default function AdminLayout() {
   const navigate = useNavigate();
   async function sair() {
     await supabase.auth.signOut();
-    navigate("/login");
+    navigate("/admin/login");
   }
   const linkClass = ({ isActive }: { isActive: boolean }) =>
     isActive
